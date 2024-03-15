@@ -11,9 +11,10 @@ my_r2: Returns r2 (coefficient of determination) between predicted and actual
 import random
 import math
 import pandas as pd
+import numpy as np
 
 # Outlier Removal
-def outlier_removal(df, column: str):
+def outlier_removal(df: pd.DataFrame, column: str):
     """Removes rows with outliers in a particular column
 
     Args:
@@ -35,7 +36,7 @@ def outlier_removal(df, column: str):
 
     return df
 
-# Train, Test Split 
+# Train, Test Split
 def my_train_test_split(X: pd.DataFrame,y: pd.DataFrame, test_size: float = 0.2, random_state: int = None) -> pd.DataFrame:
     """Splits data into training and testing DataFrames
 
@@ -58,68 +59,69 @@ def my_train_test_split(X: pd.DataFrame,y: pd.DataFrame, test_size: float = 0.2,
     return X.drop(test_ixs), X.iloc[test_ixs], y.drop(test_ixs), y.iloc[test_ixs]
 
 # Performance Metric Functions: MSE, RMSE, MAE, R2
-def my_mse(a: pd.DataFrame, b: pd.DataFrame) -> float:
+def my_mse(a: np.ndarray, b: np.ndarray) -> float:
     """Find Mean Square Error (MSE) between predicted and observed data.
 
     Args:
-        a (pd.DataFrame): Observed Data
-        b (pd.DataFrame): Predicted Data
+        a (np.ndarray): Observed Data
+        b (np.ndarray): Predicted Data
 
     Returns:
         mse (float): The final MSE
     """
-    a = a.to_numpy()
-    mse = 0
-    for i in range(len(a)):
-        mse+=(a[i]-b[i])**2
-    mse/=len(a)
-    return mse
+    return np.mean((a-b)**2)
 
-def my_rmse(a: pd.DataFrame, b: pd.DataFrame) -> float:
+def my_rmse(a: np.ndarray, b: np.ndarray) -> float:
     """Finds root mean square error (RMSE) between predicted and observered data.
 
     Args:
-        a (pd.DataFrame): Observed Data
-        b (pd.DataFrame): Predicted Data
+        a (np.ndarray): Observed Data
+        b (np.ndarray): Predicted Data
 
     Returns:
         math.sqrt(MSE) (float): Final root mean square error (RMSE) in eq format.
     """
     return math.sqrt(my_mse(a,b))
 
-def my_mae(a: pd.DataFrame,b: pd.DataFrame) -> float:
+def my_mae(a: np.ndarray,b: np.ndarray) -> float:
     """Finds mean absolute error (MAE) between predicted and observed data.
 
     Args:
-        a (pd.DataFrame): Observed Data
-        b (pd.DataFrame): Predicted Data
+        a (np.ndarray): Observed Data
+        b (np.ndarray): Predicted Data
 
     Returns:
         mae (float): Final mean absolute error (MAE)
     """
-    a = a.to_numpy()
-    mae = 0
-    for i in range(len(a)):
-        mae+=abs(a[i]-b[i])
-    mae/=len(a)
-    return mae
+    return np.mean(np.abs(a-b))
 
-def my_r2(a: pd.DataFrame,b: pd.DataFrame) -> float:
+def my_r2(a: np.ndarray,b: np.ndarray) -> float:
     """Finds R2 (Coeff of Determination) score between predicted and observed data
 
     Args:
-        a (pd.DataFrame): Observed Data
-        b (pd.DataFrame): Predicted Data
+        a (np.ndarray): Observed Data
+        b (np.ndarray): Predicted Data
 
     Returns:
         r2 (float): The final R2 score (in eq format)
     """
-    a = a.to_numpy()
     y_bar = sum(a)/len(a)
-    ss_res = 0
-    ss_tot = 0
-    for i in range(len(a)):
-        ss_res+=(a[i]-b[i])**2
-    for j in range(len(a)):
-        ss_tot+=(a[j]-y_bar)**2
+    ss_res = np.mean((a-b)**2)
+    ss_tot = np.mean((a-y_bar)**2)
     return 1-(ss_res/ss_tot)
+
+def my_performance(a: pd.DataFrame, b: pd.DataFrame):
+    """Turns predicted and observed data to numpy ndarrays and carries out MSE, RMSE, MAE, and R2
+
+    Args:
+        a (pd.DataFrame): Observed Data
+        b (pd.DataFrame): Predicted Data
+    """
+    if not isinstance(a, np.ndarray):
+        a=a.to_numpy()
+    if not isinstance(b, np.ndarray):
+        b=b.to_numpy()
+    print(f'mean squared error: {my_mse(a,b)}')
+    print(f'root mean squared error: {my_rmse(a,b)}')
+    print(f'mean absolute error: {my_mae(a,b)}')
+    print(f'r2 score: {my_r2(a,b)}')

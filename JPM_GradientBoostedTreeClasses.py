@@ -4,6 +4,7 @@ DecisionTree: Decision Tree class which builds and utilizes regression trees.
 GradientBoostAll: Gradient Boost class which boosts the DecisionTree class
 """
 import numpy as np
+import pandas as pd
 
 # Decision Tree Class
 class DecisionTree:
@@ -11,7 +12,7 @@ class DecisionTree:
 
     Instance Attributes:
         max_depth (int): Max amount of branches for a tree (Stopping Criteria)
-        tree: Where tree will be saved, compilation of nodes and their branches
+        tree (DecisionTree.Node): Where tree will be saved, compilation of nodes and their branches
     """
     def __init__(self, max_depth: int =1):
         self.max_depth = max_depth
@@ -22,40 +23,41 @@ class DecisionTree:
         Each node is a decision point for traversing through the decision tree
 
         Instance Attributes:
-            feature_index: List of features, so we can choose which one is 
-                acting as the splitting condition for the threshold
-            threshold: The condition on which a Decision Node splits
-            left: To move to left of a decision node (Threshold: True)
-            right: To move to the right of a decision node (Threshold: False)
-            value: Value that the decision tree will give as prediction if a data point 
-                ends its tree transversal at this leaf node (only leaf nodes have a value)
+            feature_index (int): A number representing the column/feature we are thresholding on
+            threshold (float): The value of our feature_index that a Decision Node splits on
+            left (DecisionTree.Node): The next node that branches left from our current 
+                decision node (<= Threshold)
+            right (DecisionTree.Node): The next node that branches right from our current 
+                decision node (> Threshold)
+            value: Value that the decision tree predicts if a data point ends its tree transversal 
+                at this leaf node (only leaf nodes have a value, and they only have a value)
         """
-        def __init__(self, feature_index=None, threshold=None, left=None, right=None, value=None):
+        def __init__(self, feature_index: int = None, threshold: float = None, left: 'DecisionTree.Node' = None, right: 'DecisionTree.Node' = None, value: float =None):
             self.feature_index = feature_index
             self.threshold = threshold
             self.left = left
             self.right = right
             self.value = value
 
-    def fit(self, X, y):
+    def fit(self, X: np.ndarray, y: np.ndarray):
         """Fits tree to the given data
 
         Args:
-            X (_type_): _description_
-            y (_type_): _description_
+            X (np.ndarray): Input (feature) data you are fitting tree to
+            y (np.ndarray): Output (observation) data you are fitting tree to
         """
         self.tree = self._build_tree(X, y, depth=0)
 
-    def _build_tree(self, X, y, depth: int):
+    def _build_tree(self, X: np.ndarray, y: np.ndarray, depth: int) -> 'DecisionTree.Node':
         """Builds our tree based on the given data through performing Recursive Binary Splitting
 
         Args:
-            X (_type_): Input (features) training data
-            y (_type_): Output (observations) training data 
+            X (np.ndarray): Input (features) training data
+            y (np.ndarray): Output (observations) training data 
             depth (int): Tracks depth of tree as tree is built through recursively calling
 
         Returns:
-            Node: Returns decision or leaf node
+            Node (DecisionTree.Node): Returns decision or leaf node
         """
         # Gets number of rows (samples) and columns (features)
         num_samples, num_features = X.shape
@@ -77,32 +79,32 @@ class DecisionTree:
         right_subtree = self._build_tree(X[right_idxs, :], y[right_idxs], depth + 1)
         return self.Node(feature_index=best_feature, threshold=best_threshold, left=left_subtree, right=right_subtree)
 
-    def _calculate_leaf_value(self, y):
+    def _calculate_leaf_value(self, y: np.ndarray) -> float:
         """Calculates the leaf value, which is the value instance attribute of the node class. 
         For a regression Decision Tree, this value is the mean of the output training data sorted 
         to this node.
 
         Args:
-            y (_type_): Output (observations) training data sorted to this leaf node.
+            y (np.ndarray): Output (observations) training data sorted to this leaf node.
 
         Returns:
             mean: Mean of the output training data sorted to this node. 
         """
         return np.mean(y)
 
-    def _find_best_split(self, X, y, num_samples: int, num_features: int):
+    def _find_best_split(self, X: np.ndarray, y: np.ndarray, num_samples: int, num_features: int) -> int | float:
         """Finds the best feature and threshold to split on based 
         on the lowest mean square error (MSE).
 
         Args:
-            X (_type_): Input (features) training data sorted to this decision node.
-            y (_type_): Output (observations) training data sorted to this decision node
+            X (np.ndarray): Input (features) training data sorted to this decision node.
+            y (np.ndarray): Output (observations) training data sorted to this decision node
             num_samples (int): Number of rows in X
             num_features (int): Number of columns in X
 
         Returns:
-            best_feature (type): The best feature for node to split on
-            best_threshold (type): The best threshold of the best_feature for node to split on
+            best_feature (int): The best feature for node to split on
+            best_threshold (float): The best threshold of the best_feature for node to split on
         """
         # Initialize variables
         best_feature, best_threshold = None, None
@@ -124,7 +126,7 @@ class DecisionTree:
                     best_threshold = threshold
         return best_feature, best_threshold
 
-    def _split(self, feature_values, threshold: float):
+    def _split(self, feature_values: int, threshold: float) -> np.ndarray:
         """Splits dataset into left_idxs/right_idxs based on threshold of a given feature
 
         Args:
@@ -140,12 +142,12 @@ class DecisionTree:
         right_idxs = np.where(feature_values > threshold)[0]
         return left_idxs, right_idxs
 
-    def _calculate_mse(self, left_y, right_y) -> float:
+    def _calculate_mse(self, left_y: np.ndarray, right_y: np.ndarray) -> float:
         """ Calculates the MSE of the left and right splits by the weighted variances
 
         Args:
-            left_y (_type_): Dataset split that are less than or equal to splitting condition
-            right_y (_type_): Dataset split that are more than splitting condition
+            left_y (np.ndarray): Dataset split that are less than or equal to splitting condition
+            right_y (np.ndarray): Dataset split that are more than splitting condition
 
         Returns:
             total_mse (float): The total weighted sum of the MSEs
@@ -155,7 +157,7 @@ class DecisionTree:
         total_mse = (total_left_mse + total_right_mse) / (len(left_y) + len(right_y))
         return total_mse
 
-    def predict(self, X) -> np.ndarray:
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """Returns the Decision Trees prediction value for an array of data points 
         by looping over all points with the _transverse_tree method.
 
@@ -169,18 +171,20 @@ class DecisionTree:
         predictions = np.array([self._traverse_tree(x, self.tree) for x in X])
         return predictions
 
-    def _traverse_tree(self, x, node):
+    def _traverse_tree(self, x: np.ndarray, node: 'DecisionTree.Node'):
         """Recursive method to transverse the tree for a single sample 'x' 
         until a leaf node is reached
 
         Args:
-            x (_type_): _description_
-            node (_type_): _description_
+            x (np.ndarray): Single row/sample of data
+            node (DecisionTree.Node): The node we're currently at on the tree
 
         Returns:
-            _type_: _description_
+            Node.Value (float): The prediction for x
+            self._transverse_tree (Function): Recursively calls itself to move on to next node
         """
         # Checks if node is a leaf node (only leaf nodes have a value attribute)
+        print(type(x), x)
         if node.value is not None:
             return node.value
         # Navigates to next node based on current decision node's splitting condition
@@ -204,13 +208,16 @@ class GradientBoostAll:
         self.learning_rate = learning_rate # Learning rate, step size for parameter update
         self.trees = [] # List of our trees
 
-    def fit(self, X_train, y_train):
+    def fit(self, X_train: pd.DataFrame, y_train: pd.DataFrame):
         """Fits boosted trees to the given data
 
         Args:
             X_train (pd.DataFrame): Training input data
             y_train (pd.DataFrame): Training output (observed) data
         """
+        # Transform args to numpy
+        X_train = X_train.to_numpy()
+        y_train = y_train.to_numpy()
         # Initialize variables: residuals = y_train to start
         residuals = np.copy(y_train)
         # Make n_estimator amount of decision tree
@@ -225,15 +232,17 @@ class GradientBoostAll:
             # Update residuals
             residuals = residuals - (self.learning_rate*f_hat)
 
-    def predict(self, X_test) -> np.ndarray:
+    def predict(self, X_test: pd.DataFrame) -> np.ndarray:
         """Uses trained Gradient Boosted Tree model to make predictions on data
 
         Args:
-            X_test (_type_): Testing or actual data that predictions will be made on
+            X_test (pd.DataFrame): Testing or actual data that predictions will be made on
 
         Returns:
             y_hat (np.ndarray): Predictions made by trained model
         """
+        # Transform arg to numpy
+        X_test = X_test.to_numpy()
         # Make sure class instance has been fit to data
         if not self.trees:
             raise ValueError("This instance of GradientBoostAll class hasn't been fit to data")
