@@ -1,17 +1,33 @@
-import numpy as np
-# Decision Tree Class
+""" Regression Decision Tree and Boosted Gradient Classes for Boosted Gradient Trees ML Model
 
-# Used as a week learned within the gradient boosting ensemble (builds iteratively which is why there is a max depth of 1)
-# High bias but low variance, 
-# Ideal for boosting methods that aim to iteratively reduce error by focusing on hard-to-predict instances.
+DecisionTree: Decision Tree class which builds and utilizes regression trees.
+GradientBoostAll: Gradient Boost class which boosts the DecisionTree class
+"""
+import numpy as np
+
+# Decision Tree Class
 class DecisionTree:
-    def __init__(self, max_depth=1):
+    """A Decision Tree used for regression
+
+    Instance Attributes:
+        max_depth (int): Max amount of branches for a tree (stops splitting once hit)
+        tree: 
+    """
+    def __init__(self, max_depth: int =1):
         self.max_depth = max_depth
         self.tree = None
 
-    # Each node is a decision point for traversing through the decision tree
-    # Follows decision tree logic
     class Node:
+        """A node of a decision tree. 
+        Each node is a decision point for traversing through the decision tree
+
+        Instance Attributes:
+            feature_index:
+            threshold:
+            left:
+            right:
+            value:
+        """
         def __init__(self, feature_index=None, threshold=None, left=None, right=None, value=None):
             # feature_Index and threshold are determining factors for where the split happens
             self.feature_index = feature_index
@@ -21,6 +37,12 @@ class DecisionTree:
             self.value = value
 
     def fit(self, X, y):
+        """Fits tree to the given data
+
+        Args:
+            X (_type_): _description_
+            y (_type_): _description_
+        """
         self.tree = self._build_tree(X, y, depth=0)
 
     # Recursive binary splitting
@@ -80,7 +102,7 @@ class DecisionTree:
         total_right_mse = np.var(right_y) * len(right_y) if len(right_y) > 0 else 0
         total_mse = (total_left_mse + total_right_mse) / (len(left_y) + len(right_y))
         return total_mse
-    
+
     def predict(self, X):
         # Predictions array to store predictions for each sample in X
         predictions = np.array([self._traverse_tree(x, self.tree) for x in X])
@@ -94,22 +116,33 @@ class DecisionTree:
             return self._traverse_tree(x, node.left)
         else:
             return self._traverse_tree(x, node.right)
-        
-# Boosted Gradient Class
-# Gradient Boost Class
 
+# Boosted Gradient Class
 class GradientBoostAll:
-    def __init__(self, n_estimators: int = 25, max_depth: int = 1, learning_rate: int =.1):
+    """Class for creating Gradient Boosted Regression Trees ML model
+
+    Instance Attributes:
+        max_depth (int): Max amount of branches for a tree (stops splitting once hit)
+        n_estimators (int): The amount of trees (iterations) that will be gradient boosted
+        learning_rate (float): The step size made each iteration to minimize the loss
+        trees (list): A list of all the trees made during boosting
+    """
+    def __init__(self, n_estimators: int = 25, max_depth: int = 1, learning_rate: float =.1):
         self.max_depth = max_depth # Max depth of the trees
         self.n_estimators = n_estimators # Number of trees
         self.learning_rate = learning_rate # Learning rate, step size for parameter update
         self.trees = [] # List of our trees
-    
+
     def fit(self, X_train, y_train):
-        # To start all residuals = y_train
+        """Fits boosted trees to the given data
+
+        Args:
+            X_train (pd.DataFrame): Training input data
+            y_train (pd.DataFrame): Training output (observed) data
+        """
+        # Initialize variables: residuals = y_train to start
         residuals = np.copy(y_train)
-        self.f_hat = 0 
-        # Now time to make decision trees
+        # Make n_estimator amount of decision tree
         for i in range(self.n_estimators):
             # Build and Fit Tree to data
             tree = DecisionTree(max_depth=self.max_depth)
@@ -117,15 +150,25 @@ class GradientBoostAll:
             # Save our tree
             self.trees.append(tree)
             # Make prediction
-            f_hat_b = tree.predict(X_train)
-            # Update f_hat
-            self.f_hat += (self.learning_rate*f_hat_b) 
+            f_hat = tree.predict(X_train)
             # Update residuals
-            residuals = residuals - (self.learning_rate*f_hat_b)
-        return self
-    
-    def predict(self, X_test):
+            residuals = residuals - (self.learning_rate*f_hat)
+
+    def predict(self, X_test) -> np.ndarray:
+        """Uses trained Gradient Boosted Tree model to make predictions on data
+
+        Args:
+            X_test (_type_): Testing or actual data that predictions will be made on
+
+        Returns:
+            y_hat (np.ndarray): Predictions made by trained model
+        """
+        # Make sure class instance has been fit to data
+        if not self.trees:
+            raise ValueError("This instance of GradientBoostAll class hasn't been fit to data")
+        # Initialize prediction to be same length as input data
         y_hat = np.zeros((X_test.shape[0], ))
+        # Sum prediction from each tree
         for tree in self.trees:
             y_hat += self.learning_rate*tree.predict(X_test)
         return y_hat

@@ -1,3 +1,13 @@
+"""ML PreProcessing and Model Performance Functions
+
+outlier_removal: Removes rows with outliers in a specified column
+my_train_test_split: Splits data into a testing and training by specified split percentage
+my_mse: Returns mean square error between predicted and actual
+my_rmse: Returns root mean square error between predicted and actual
+my_mae: Returns mean absolute error between predicted and actual 
+my_r2: Returns r2 (coefficient of determination) between predicted and actual
+"""
+
 import random
 import math
 import pandas as pd
@@ -14,66 +24,96 @@ def outlier_removal(df, column: str):
         df (pandas DataFrame): The DataFrame minus the outliers
     """
     # Calculate IQR
-    upper_QR = df[column].quantile(0.75)
-    lower_QR = df[column].quantile(0.25)
-    inter_QR = upper_QR-lower_QR
+    upper_qr = df[column].quantile(0.75)
+    lower_qr = df[column].quantile(0.25)
+    inter_qr = upper_qr-lower_qr
     # Filter for outliers
-    df = df[df[column]<(upper_QR+(1.5*inter_QR))] # Gets all values below upper outlier limits
-    df = df[df[column]>(lower_QR-(1.5*inter_QR))] # Gets all values above lower limits
-    # Reset indexes 
+    df = df[df[column]<(upper_qr+(1.5*inter_qr))] # Gets all values below upper outlier limits
+    df = df[df[column]>(lower_qr-(1.5*inter_qr))] # Gets all values above lower limits
+    # Reset indexes
     df.reset_index(drop=True)
- 
+
     return df
 
-# Performance Metric Functiosn
-# Below are our version of the performance metric functions, and the train, test, split function
+# Train, Test Split 
+def my_train_test_split(X: pd.DataFrame,y: pd.DataFrame, test_size: float = 0.2, random_state: int = None) -> pd.DataFrame:
+    """Splits data into training and testing DataFrames
 
-def my_train_test_split(*arrays, test_size = 0.2, training_size = 0.8, random_state = None):
-    if test_size+training_size!=1:
-        raise 'Bad training/test split size'
-    for i in arrays:
-        if len(i)!=len(arrays[0]):
-            raise 'Bad input object size'
+    Args:
+        X (pd.DataFrame): Input DataFrame to be split
+        y (pd.DataFrame): Output DataFrame to be split
+        test_size (float, optional): Percentage of data in test DataFrame. 
+            Defaults to 0.2.
+        random_state (int, optional): Saves the split configuration for reusability. 
+            Defaults to None.
+
+    Returns:
+        X_train, X_test, y_train, y_test (pd.DataFrame): Split DataFrames 
+    """
+    #get random seed to allow reproduceability
     random.seed(random_state)
-    array_size = len(arrays[0])
-    num_test = math.floor(array_size*test_size)
-    num_train = math.floor(array_size*training_size)
-    num_train+=(array_size-num_train-num_test)
-    return_list = []
-    test_list = random.sample(range(array_size),num_test, )
-    for i in arrays:
-        if type(i)==pd.DataFrame:
-            test_array = pd.DataFrame(columns = i.columns)
-            train_array = pd.DataFrame(columns = i.columns)
-        elif type(i)==pd.Series:
-            test_array = pd.Series()
-            train_array = pd.Series()
-        test_array = i.iloc[test_list]
-        train_array = i.drop(test_list)
-        return_list.append(train_array)
-        return_list.append(test_array)
-    return return_list
+    #select test indexes from range of total indexes
+    test_ixs= random.sample(range(len(y)), math.floor(len(y)*test_size))
+    #return X_train, X_test, y_train, y_test (train sets are total sets - test sets)
+    return X.drop(test_ixs), X.iloc[test_ixs], y.drop(test_ixs), y.iloc[test_ixs]
 
-def my_mse(a, b):
+# Performance Metric Functions: MSE, RMSE, MAE, R2
+def my_mse(a: pd.DataFrame, b: pd.DataFrame) -> float:
+    """Find Mean Square Error (MSE) between predicted and observed data.
+
+    Args:
+        a (pd.DataFrame): Observed Data
+        b (pd.DataFrame): Predicted Data
+
+    Returns:
+        mse (float): The final MSE
+    """
     a = a.to_numpy()
-    sum = 0
+    mse = 0
     for i in range(len(a)):
-        sum+=(a[i]-b[i])**2
-    sum/=len(a)
-    return sum
+        mse+=(a[i]-b[i])**2
+    mse/=len(a)
+    return mse
 
-def my_rmse(a, b):
+def my_rmse(a: pd.DataFrame, b: pd.DataFrame) -> float:
+    """Finds root mean square error (RMSE) between predicted and observered data.
+
+    Args:
+        a (pd.DataFrame): Observed Data
+        b (pd.DataFrame): Predicted Data
+
+    Returns:
+        math.sqrt(MSE) (float): Final root mean square error (RMSE) in eq format.
+    """
     return math.sqrt(my_mse(a,b))
 
-def my_mae(a,b):
-    a = a.to_numpy()
-    sum = 0
-    for i in range(len(a)):
-        sum+=abs(a[i]-b[i])
-    sum/=len(a)
-    return sum
+def my_mae(a: pd.DataFrame,b: pd.DataFrame) -> float:
+    """Finds mean absolute error (MAE) between predicted and observed data.
 
-def my_r2(a,b):
+    Args:
+        a (pd.DataFrame): Observed Data
+        b (pd.DataFrame): Predicted Data
+
+    Returns:
+        mae (float): Final mean absolute error (MAE)
+    """
+    a = a.to_numpy()
+    mae = 0
+    for i in range(len(a)):
+        mae+=abs(a[i]-b[i])
+    mae/=len(a)
+    return mae
+
+def my_r2(a: pd.DataFrame,b: pd.DataFrame) -> float:
+    """Finds R2 (Coeff of Determination) score between predicted and observed data
+
+    Args:
+        a (pd.DataFrame): Observed Data
+        b (pd.DataFrame): Predicted Data
+
+    Returns:
+        r2 (float): The final R2 score (in eq format)
+    """
     a = a.to_numpy()
     y_bar = sum(a)/len(a)
     ss_res = 0
