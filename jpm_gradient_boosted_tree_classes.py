@@ -20,7 +20,8 @@ class DecisionTree:
 
     class Node:
         """A node of a decision tree. 
-        Each node is a decision point for traversing through the decision tree
+        Each node is a decision point for traversing through the decision tree,
+        or a leaf node for stopping transversal.
 
         Instance Attributes:
             feature_index (int): A number representing the column/feature we are thresholding on
@@ -184,7 +185,6 @@ class DecisionTree:
             self._transverse_tree (Function): Recursively calls itself to move on to next node
         """
         # Checks if node is a leaf node (only leaf nodes have a value attribute)
-        print(type(x), x)
         if node.value is not None:
             return node.value
         # Navigates to next node based on current decision node's splitting condition

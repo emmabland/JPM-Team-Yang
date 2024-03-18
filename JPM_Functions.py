@@ -121,7 +121,7 @@ def my_performance(a: pd.DataFrame, b: pd.DataFrame):
         a=a.to_numpy()
     if not isinstance(b, np.ndarray):
         b=b.to_numpy()
-    print(f'mean squared error: {my_mse(a,b)}')
-    print(f'root mean squared error: {my_rmse(a,b)}')
-    print(f'mean absolute error: {my_mae(a,b)}')
-    print(f'r2 score: {my_r2(a,b)}')
+    print(f'Mean Squared Error: {my_mse(a,b)}')
+    print(f'Root Mean Squared Error: {my_rmse(a,b)}')
+    print(f'Mean Absolute Error: {my_mae(a,b)}')
+    print(f'R2 Score: {my_r2(a,b)}')
